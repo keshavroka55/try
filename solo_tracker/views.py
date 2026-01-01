@@ -1,14 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate,logout
+from django.contrib.auth import logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils import timezone
-from django.db.models import Count, Sum
-from .models import UserProfile, Quest, UserQuest, QuestCategory, Achievement, UserAchievement,Notification,CustomQuest
-from .forms import QuestCompletionForm,CustomQuestForm
-import json
+from django.db.models import Count
+from .models import UserProfile, Quest, UserQuest, Achievement, UserAchievement,Notification,CustomQuest
+from .forms import CustomQuestForm
 
 def home(request):
     # if request.user.is_authenticated:

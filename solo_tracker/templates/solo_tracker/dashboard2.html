@@ -1,0 +1,1096 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Solo Tracker{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<!-- Include Notification System -->
+{% include 'solo_tracker/notification.html' %}
+
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+
+<!-- Auto-update notification container -->
+<div id="autoUpdateNotifications" class="fixed top-4 right-4 z-50 space-y-2 w-80"></div>
+
+<!-- Level and XP Section -->
+<div class="mb-8 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+            <div class="text-4xl font-bold text-purple-400 level-display">Level {{ profile.level }}</div>
+            <svg class="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        <div class="text-right">
+            <div class="text-2xl font-bold total-xp">{{ profile.total_xp|floatformat:0 }}</div>
+            <div class="text-sm text-gray-400">Total XP</div>
+        </div>
+    </div>
+    <div class="space-y-2">
+        <div class="flex justify-between text-sm">
+            <span>XP Progress</span>
+            <span class="current-xp-display">{{ profile.current_xp }}</span> / <span class="level-threshold">{{ profile.level }}000</span>
+        </div>
+        <div class="w-full bg-slate-700 rounded-full h-3">
+            <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full xp-progress glow-effect" 
+                style="width: {{ profile.xp_percentage }}%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Stats and Quests -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Performance Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-800/50 border border-blue-500/30 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-orange-400 streak-fire" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <div class="text-2xl font-bold streak-display">{{ profile.streak }}</div>
+                        <div class="text-sm text-gray-400">Day Streak</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/50 border border-green-500/30 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <div class="text-2xl font-bold quests-done-display">{{ completed_quests_count }}</div>
+                        <div class="text-sm text-gray-400">Quests Done</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/50 border border-purple-500/30 rounded-lg p-4">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-yellow-400 rank-crown" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                    <div>
+                        <div class="text-2xl font-bold rank-display">#{{ profile.rank }}</div>
+                        <div class="text-sm text-gray-400">Global Rank</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Daily Quests -->
+        <div class="bg-slate-800/50 border border-purple-500/30 rounded-lg">
+            <div class="p-6 border-b border-purple-500/20">
+                <h2 class="text-xl font-bold flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    <span>System Daily Quests</span>
+                </h2>
+            </div>
+            <div class="p-6 space-y-4 system-quests-container">
+                {% for user_quest in today_quests %}
+                <div class="quest-card p-4 rounded-lg border transition-all {% if user_quest.completed %}bg-green-900/20 border-green-500/30 completed-quest{% else %}bg-slate-700/30 border-slate-600/30 hover:border-purple-500/50{% endif %}"
+                     data-quest-id="{{ user_quest.id }}"
+                     data-xp="{{ user_quest.quest.xp_reward }}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="font-semibold quest-title {% if user_quest.completed %}line-through text-gray-400{% endif %}">
+                                    {{ user_quest.quest.title }}
+                                </h3>
+                                <span class="px-2 py-1 text-xs rounded-full border 
+                                    {% if user_quest.quest.difficulty == 'Easy' %}bg-green-500/20 text-green-400 border-green-500/30
+                                    {% elif user_quest.quest.difficulty == 'Medium' %}bg-yellow-500/20 text-yellow-400 border-yellow-500/30
+                                    {% elif user_quest.quest.difficulty == 'Hard' %}bg-red-500/20 text-red-400 border-red-500/30
+                                    {% elif user_quest.quest.difficulty == 'Epic' %}bg-purple-500/20 text-purple-400 border-purple-500/30
+                                    {% endif %}">
+                                    {{ user_quest.quest.difficulty }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-400 mb-2 quest-description">{{ user_quest.quest.description }}</p>
+                            <div class="flex items-center space-x-4 text-sm">
+                                <span class="text-blue-400 quest-xp">+{{ user_quest.quest.xp_reward }} XP</span>
+                                <span class="text-gray-500">{{ user_quest.quest.category.name }}</span>
+                            </div>
+                        </div>
+                        {% if not user_quest.completed %}
+                        <button onclick="completeSystemQuest({{ user_quest.id }})" 
+                                class="complete-btn bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            Complete
+                        </button>
+                        {% else %}
+                        <div class="completed-icon text-green-400">
+                            <svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-400 text-center py-8">No system quests available today. Check back tomorrow!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Custom Quests Sections -->
+        {% if daily_custom_quests %}
+        <div class="custom-quests-section bg-slate-800/50 border border-cyan-500/30 rounded-lg">
+            <div class="p-6 border-b border-cyan-500/20">
+                <h2 class="text-xl font-bold flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Daily Custom Quests</span>
+                </h2>
+            </div>
+            <div class="p-6 space-y-4 custom-quests-container">
+                {% for quest in daily_custom_quests %}
+                {% include 'solo_tracker/quest_card.html' with quest=quest %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if weekly_custom_quests %}
+        <div class="custom-quests-section bg-slate-800/50 border border-blue-500/30 rounded-lg">
+            <div class="p-6 border-b border-blue-500/20">
+                <h2 class="text-xl font-bold flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Weekly Custom Quests</span>
+                </h2>
+            </div>
+            <div class="p-6 space-y-4 custom-quests-container">
+                {% for quest in weekly_custom_quests %}
+                {% include 'solo_tracker/quest_card.html' with quest=quest %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if custom_quests %}
+        <div class="custom-quests-section bg-slate-800/50 border border-yellow-500/30 rounded-lg">
+            <div class="p-6 border-b border-yellow-500/20">
+                <h2 class="text-xl font-bold flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Custom Quests</span>
+                </h2>
+            </div>
+            <div class="p-6 space-y-4 custom-quests-container">
+                {% for quest in custom_quests %}
+                {% include 'solo_tracker/quest_card.html' with quest=quest %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Completed Quests -->
+        {% if completed_custom_quests %}
+        <div class="completed-quests-section bg-slate-800/50 border border-green-500/30 rounded-lg">
+            <div class="p-6 border-b border-green-500/20">
+                <h2 class="text-xl font-bold flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Recently Completed</span>
+                </h2>
+            </div>
+            <div class="p-6 space-y-4 completed-quests-container">
+                {% for quest in completed_custom_quests %}
+                <div class="quest-card p-4 rounded-lg border bg-green-900/20 border-green-500/30">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="font-semibold line-through text-gray-400">{{ quest.title }}</h3>
+                                <span class="px-2 py-1 text-xs rounded-full border bg-green-500/20 text-green-400 border-green-500/30">
+                                    Completed
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-400 mb-2">{{ quest.description }}</p>
+                            <div class="flex items-center space-x-4 text-sm">
+                                <span class="text-blue-400">+{{ quest.xp_reward }} XP</span>
+                                <span class="text-gray-500">{{ quest.get_quest_type_display }}</span>
+                                <span class="text-green-400">{{ quest.completed_at|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                        <div class="text-green-400">
+                            <svg class="w-6 h-6 fill-current" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Leaderboard -->
+        <div class="bg-slate-800/50 border border-yellow-500/30 rounded-lg">
+            <div class="p-6 border-b border-yellow-500/20">
+                <h2 class="text-xl font-bold flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                    <span>Hunter Rankings</span>
+                </h2>
+            </div>
+            <div class="p-6 space-y-3 leaderboard-container">
+                {% for entry in leaderboard %}
+                <div class="leaderboard-item flex items-center space-x-3 p-3 rounded-lg {% if entry.user == user %}bg-purple-900/30 border border-purple-500/30{% else %}bg-slate-700/30{% endif %}">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                        {% if forloop.counter == 1 %}bg-yellow-500 text-black
+                        {% elif forloop.counter == 2 %}bg-gray-400 text-black
+                        {% elif forloop.counter == 3 %}bg-orange-500 text-black
+                        {% else %}bg-slate-600 text-white{% endif %}">
+                        {{ forloop.counter }}
+                    </div>
+                    <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm">
+                        {{ entry.user.username|first|upper }}
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm">
+                            {% if entry.user == user %}You{% else %}{{ entry.user.username }}{% endif %}
+                        </div>
+                        <div class="text-xs text-gray-400">Level {{ entry.level }}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-semibold">{{ entry.total_xp|floatformat:0 }}</div>
+                        <div class="text-xs text-gray-400">XP</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Weekly Progress -->
+        <div class="bg-slate-800/50 border border-blue-500/30 rounded-lg">
+            <div class="p-6 border-b border-blue-500/20">
+                <h2 class="text-xl font-bold flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    <span>Weekly Progress</span>
+                </h2>
+            </div>
+            <div class="p-6 space-y-4 weekly-progress-container">
+                {% for category, percentage in weekly_progress.items %}
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>{{ category }}</span>
+                        <span>{{ percentage|floatformat:0 }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                        <div class="weekly-progress-bar bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full" 
+                            style="width: {{ percentage }}%"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-400 text-center">Complete some quests to see your progress!</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Create Quest Button -->
+        <div class="text-center">
+            <a href="{% url 'solo_tracker:create_quest' %}" 
+            class="create-quest-btn inline-flex items-center bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-600 hover:via-blue-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/25 border border-cyan-400/30">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Create New Quest
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Update Quest Modal -->
+<div id="updateQuestModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 border border-cyan-400/30 rounded-lg p-8 max-w-md w-full">
+            <div class="absolute -top-2 -left-2 w-4 h-4 border-l-2 border-t-2 border-cyan-400"></div>
+            <div class="absolute -top-2 -right-2 w-4 h-4 border-r-2 border-t-2 border-cyan-400"></div>
+            <div class="absolute -bottom-2 -left-2 w-4 h-4 border-l-2 border-b-2 border-cyan-400"></div>
+            <div class="absolute -bottom-2 -right-2 w-4 h-4 border-r-2 border-b-2 border-cyan-400"></div>
+            
+            <h3 class="text-2xl font-bold text-white mb-6 text-center">Update Quest</h3>
+            <form id="updateQuestForm" class="space-y-4">
+                <input type="hidden" id="updateQuestId">
+                <div>
+                    <label class="block text-cyan-300 font-semibold mb-2">Title</label>
+                    <input type="text" id="updateTitle" class="w-full bg-transparent border-b-2 border-cyan-400/50 focus:border-cyan-400 text-white py-2 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-cyan-300 font-semibold mb-2">Description</label>
+                    <textarea id="updateDescription" class="w-full bg-slate-800/50 border border-cyan-400/30 rounded text-white p-3 focus:outline-none focus:border-cyan-400" rows="3"></textarea>
+                </div>
+                <div class="flex space-x-4 justify-end">
+                    <button type="button" onclick="closeUpdateModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors">
+                        Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- XP Gain Animation Element -->
+<div id="xpGainAnimation" class="fixed z-50 pointer-events-none"></div>
+
+<!-- Level Up Modal -->
+<div id="levelUpModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-gradient-to-br from-purple-900/90 to-blue-900/90 border border-yellow-500/50 rounded-lg p-8 max-w-md w-full text-center">
+            <div class="absolute inset-0 bg-yellow-500/10 rounded-lg"></div>
+            <div class="relative">
+                <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                    <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-bold text-yellow-400 mb-4 level-up-title">Level Up!</h2>
+                <p class="text-xl text-white mb-2">Congratulations!</p>
+                <p class="text-lg text-gray-300 mb-6 level-up-message">You've reached a new level!</p>
+                <button onclick="closeLevelUpModal()" class="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition-colors">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-update dashboard logic
+// Dashboard Auto-update System
+class DashboardAutoUpdater {
+    constructor() {
+        this.csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        this.initializeEventListeners();
+        this.initializeWebSocket();
+    }
+    
+    initializeEventListeners() {
+        // Handle system quest completion
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('complete-btn')) {
+                const questId = e.target.closest('.quest-card').dataset.questId;
+                this.completeSystemQuest(questId);
+            }
+        });
+        
+        // Handle custom quest progress update
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('update-progress-btn')) {
+                const questId = e.target.closest('[data-custom-quest-id]').dataset.customQuestId;
+                this.updateQuestProgress(questId);
+            }
+        });
+        
+        // Handle quest deletion
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-quest-btn') || 
+                e.target.closest('.delete-quest-btn')) {
+                const questId = e.target.closest('[data-custom-quest-id]').dataset.customQuestId;
+                this.deleteQuest(questId);
+            }
+        });
+    }
+    
+    initializeWebSocket() {
+        // WebSocket for real-time updates (optional)
+        if (window.WebSocket) {
+            const wsScheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${wsScheme}//${window.location.host}/ws/dashboard/`;
+            
+            try {
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    this.handleRealTimeUpdate(data);
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                };
+            } catch (error) {
+                console.warn('WebSocket connection failed, using fallback');
+            }
+        }
+    }
+    
+    async completeSystemQuest(questId) {
+        const questCard = document.querySelector(`[data-quest-id="${questId}"]`);
+        const completeBtn = questCard.querySelector('.complete-btn');
+        const xpAmount = parseInt(questCard.dataset.xp);
+        
+        // Show updating state
+        completeBtn.innerHTML = '<span class="updating-text">Updating...</span>';
+        completeBtn.disabled = true;
+        questCard.classList.add('updating');
+        
+        try {
+            const response = await fetch(`/complete-quest/${questId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Show XP gain animation
+                this.showXPGainAnimation(xpAmount);
+                
+                // Update quest card
+                setTimeout(() => {
+                    this.updateQuestCardUI(questCard, data);
+                }, 500);
+                
+                // Update dashboard stats
+                setTimeout(() => {
+                    this.updateDashboardStats(data);
+                }, 800);
+                
+                // Show success notification
+                this.showAutoUpdateNotification(
+                    'Quest Completed!',
+                    `+${xpAmount} XP gained!`,
+                    'achievement'
+                );
+                
+                // Check for level up
+                if (data.level_up) {
+                    setTimeout(() => {
+                        this.showLevelUp(data.new_level);
+                    }, 1200);
+                }
+            } else {
+                throw new Error(data.message || 'Failed to complete quest');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            completeBtn.innerHTML = '<span class="error-text">Error!</span>';
+            questCard.classList.remove('updating');
+            
+            this.showAutoUpdateNotification(
+                'Error',
+                'Failed to complete quest. Please try again.',
+                'warning'
+            );
+            
+            setTimeout(() => {
+                completeBtn.innerHTML = 'Complete';
+                completeBtn.disabled = false;
+            }, 2000);
+        }
+    }
+    
+    async updateQuestProgress(questId) {
+        const questCard = document.querySelector(`[data-custom-quest-id="${questId}"]`);
+        const updateBtn = questCard.querySelector('.update-progress-btn');
+        
+        if (!updateBtn) return;
+        
+        // Show updating state
+        const originalText = updateBtn.innerHTML;
+        updateBtn.innerHTML = '<span class="updating-text">Updating...</span>';
+        updateBtn.disabled = true;
+        questCard.classList.add('updating');
+        
+        try {
+            const response = await fetch(`/update-quest/${questId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update progress bar
+                const progressBar = questCard.querySelector('.progress-bar');
+                const progressText = questCard.querySelector('.progress-text');
+                
+                if (progressBar) {
+                    progressBar.style.width = `${data.progress}%`;
+                }
+                if (progressText) {
+                    progressText.textContent = `${data.current_count}/${data.target_count}`;
+                }
+                
+                // If completed, update the card
+                if (data.completed) {
+                    setTimeout(() => {
+                        this.markQuestAsCompleted(questCard, data);
+                    }, 500);
+                    
+                    // Show XP gain animation
+                    this.showXPGainAnimation(data.xp_gained);
+                    
+                    // Update dashboard stats
+                    setTimeout(() => {
+                        this.updateDashboardStats(data);
+                    }, 800);
+                    
+                    this.showAutoUpdateNotification(
+                        'Quest Completed!',
+                        `+${data.xp_gained} XP gained!`,
+                        'achievement'
+                    );
+                    
+                    // Check for level up
+                    if (data.level_up) {
+                        setTimeout(() => {
+                            this.showLevelUp(data.new_level);
+                        }, 1200);
+                    }
+                } else {
+                    this.showAutoUpdateNotification(
+                        'Progress Updated!',
+                        data.message,
+                        'info'
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            updateBtn.innerHTML = '<span class="error-text">Error!</span>';
+            questCard.classList.remove('updating');
+            
+            this.showAutoUpdateNotification(
+                'Error',
+                'Failed to update progress. Please try again.',
+                'warning'
+            );
+            
+            setTimeout(() => {
+                updateBtn.innerHTML = originalText;
+                updateBtn.disabled = false;
+            }, 2000);
+        }
+    }
+    
+    async deleteQuest(questId) {
+        if (!confirm('Are you sure you want to delete this quest? This action cannot be undone.')) {
+            return;
+        }
+        
+        const questCard = document.querySelector(`[data-custom-quest-id="${questId}"]`);
+        
+        try {
+            const response = await fetch(`/delete-quest/${questId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Animate removal
+                questCard.style.transform = 'translateX(100%)';
+                questCard.style.opacity = '0';
+                
+                setTimeout(() => {
+                    questCard.remove();
+                    this.showAutoUpdateNotification(
+                        'Quest Deleted',
+                        data.message,
+                        'warning'
+                    );
+                    
+                    // Update quest count if needed
+                    this.updateQuestCount(-1);
+                }, 300);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            this.showAutoUpdateNotification(
+                'Error',
+                'Failed to delete quest. Please try again.',
+                'warning'
+            );
+        }
+    }
+    
+    updateQuestCardUI(questCard, data) {
+        questCard.classList.remove('updating');
+        questCard.classList.add('quest-completed', 'completed-quest');
+        
+        // Update to completed state
+        const completeBtn = questCard.querySelector('.complete-btn');
+        if (completeBtn) {
+            completeBtn.style.display = 'none';
+        }
+        
+        // Add completed icon
+        const completedIcon = document.createElement('div');
+        completedIcon.className = 'completed-icon text-green-400 success-checkmark';
+        completedIcon.innerHTML = `
+            <svg class="w-8 h-8 fill-current" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+        `;
+        
+        const questActions = questCard.querySelector('.flex-1')?.nextElementSibling;
+        if (questActions) {
+            questActions.innerHTML = '';
+            questActions.appendChild(completedIcon);
+        }
+        
+        // Update title with line-through
+        const title = questCard.querySelector('.quest-title');
+        if (title) {
+            title.classList.add('line-through', 'text-gray-400');
+        }
+    }
+    
+    markQuestAsCompleted(questCard, data) {
+        questCard.classList.remove('updating');
+        questCard.classList.add('quest-completed', 'completed-quest');
+        
+        const updateBtn = questCard.querySelector('.update-progress-btn');
+        const deleteBtn = questCard.querySelector('.delete-quest-btn');
+        
+        if (updateBtn) updateBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        
+        // Add completed icon
+        const completedIcon = document.createElement('div');
+        completedIcon.className = 'completed-icon text-green-400 success-checkmark';
+        completedIcon.innerHTML = `
+            <svg class="w-8 h-8 fill-current" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+        `;
+        
+        const questActions = questCard.querySelector('.quest-actions');
+        if (questActions) {
+            questActions.innerHTML = '';
+            questActions.appendChild(completedIcon);
+        }
+        
+        // Move to completed section
+        setTimeout(() => {
+            this.moveToCompletedSection(questCard);
+        }, 1000);
+    }
+    
+    moveToCompletedSection(questCard) {
+        const completedSection = document.querySelector('.completed-quests-container');
+        if (completedSection && questCard.parentNode !== completedSection) {
+            questCard.style.transition = 'all 0.5s ease';
+            questCard.style.transform = 'translateY(-20px)';
+            questCard.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                completedSection.prepend(questCard);
+                questCard.style.transform = 'translateY(0)';
+                questCard.style.opacity = '1';
+            }, 300);
+        }
+    }
+    
+    updateDashboardStats(data) {
+        // Update XP displays
+        this.updateXPDisplay(data.current_xp, data.total_xp, data.new_level || data.level);
+        
+        // Update streak if available
+        if (data.new_streak !== undefined) {
+            this.updateStreakDisplay(data.new_streak);
+        }
+        
+        // Update quests done count
+        this.updateQuestCount();
+        
+        // Update rank if available
+        if (data.new_rank !== undefined) {
+            this.updateRankDisplay(data.new_rank);
+        }
+        
+        // Update leaderboard
+        if (data.leaderboard_update) {
+            this.updateLeaderboard();
+        }
+        
+        // Update weekly progress
+        if (data.weekly_progress) {
+            this.updateWeeklyProgress(data.weekly_progress);
+        }
+    }
+    
+    updateXPDisplay(currentXP, totalXP, level) {
+        // Update level display with animation
+        const levelDisplay = document.querySelector('.level-display');
+        if (levelDisplay) {
+            levelDisplay.textContent = `Level ${level}`;
+            levelDisplay.classList.add('level-up-animation');
+            setTimeout(() => levelDisplay.classList.remove('level-up-animation'), 1000);
+        }
+        
+        // Update XP progress bar
+        const progressBar = document.querySelector('.xp-progress');
+        const currentXPDisplay = document.querySelector('.current-xp-display');
+        const levelThreshold = document.querySelector('.level-threshold');
+        
+        if (progressBar) {
+            const percentage = (currentXP / (level * 1000)) * 100;
+            progressBar.style.width = `${percentage}%`;
+        }
+        
+        if (currentXPDisplay) {
+            currentXPDisplay.textContent = currentXP;
+            currentXPDisplay.classList.add('stat-update');
+            setTimeout(() => currentXPDisplay.classList.remove('stat-update'), 500);
+        }
+        
+        if (levelThreshold) {
+            levelThreshold.textContent = `${level}000`;
+        }
+        
+        // Update total XP with counting animation
+        const totalXPDisplay = document.querySelector('.total-xp');
+        if (totalXPDisplay) {
+            this.animateCounter(totalXPDisplay, parseInt(totalXPDisplay.textContent.replace(/,/g, '')), totalXP, 1000);
+        }
+    }
+    
+    updateStreakDisplay(newStreak) {
+        const streakDisplay = document.querySelector('.streak-display');
+        if (streakDisplay) {
+            this.animateCounter(streakDisplay, parseInt(streakDisplay.textContent), newStreak, 500);
+            streakDisplay.classList.add('stat-update');
+            setTimeout(() => streakDisplay.classList.remove('stat-update'), 500);
+        }
+    }
+    
+    updateQuestCount(increment = 1) {
+        const questsDoneDisplay = document.querySelector('.quests-done-display');
+        if (questsDoneDisplay) {
+            const current = parseInt(questsDoneDisplay.textContent);
+            this.animateCounter(questsDoneDisplay, current, current + increment, 500);
+            questsDoneDisplay.classList.add('stat-update');
+            setTimeout(() => questsDoneDisplay.classList.remove('stat-update'), 500);
+        }
+    }
+    
+    updateRankDisplay(newRank) {
+        const rankDisplay = document.querySelector('.rank-display');
+        if (rankDisplay) {
+            rankDisplay.textContent = `#${newRank}`;
+            rankDisplay.classList.add('achievement-badge');
+            setTimeout(() => rankDisplay.classList.remove('achievement-badge'), 600);
+        }
+    }
+    
+    async updateLeaderboard() {
+        try {
+            const response = await fetch('/api/leaderboard/', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            
+            const leaderboard = await response.json();
+            const container = document.querySelector('.leaderboard-container');
+            
+            if (container && leaderboard) {
+                container.innerHTML = leaderboard.map((entry, index) => `
+                    <div class="leaderboard-item flex items-center space-x-3 p-3 rounded-lg ${entry.is_current_user ? 'bg-purple-900/30 border border-purple-500/30' : 'bg-slate-700/30'}">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                            ${index === 0 ? 'bg-yellow-500 text-black' :
+                              index === 1 ? 'bg-gray-400 text-black' :
+                              index === 2 ? 'bg-orange-500 text-black' :
+                              'bg-slate-600 text-white'}">
+                            ${index + 1}
+                        </div>
+                        <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm">
+                            ${entry.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-semibold text-sm">
+                                ${entry.is_current_user ? 'You' : entry.username}
+                            </div>
+                            <div class="text-xs text-gray-400">Level ${entry.level}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-semibold">${entry.total_xp.toLocaleString()}</div>
+                            <div class="text-xs text-gray-400">XP</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error updating leaderboard:', error);
+        }
+    }
+    
+    updateWeeklyProgress(progressData) {
+        const container = document.querySelector('.weekly-progress-container');
+        if (container && progressData) {
+            container.innerHTML = Object.entries(progressData).map(([category, percentage]) => `
+                <div>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>${category}</span>
+                        <span>${Math.round(percentage)}%</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                        <div class="weekly-progress-bar bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full" 
+                            style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+    
+    showXPGainAnimation(xpAmount) {
+        const xpDisplay = document.querySelector('.total-xp');
+        if (!xpDisplay) return;
+        
+        const rect = xpDisplay.getBoundingClientRect();
+        const xpElement = document.createElement('div');
+        xpElement.className = 'xp-gain-element';
+        xpElement.textContent = `+${xpAmount} XP`;
+        xpElement.style.left = `${rect.left + rect.width / 2}px`;
+        xpElement.style.top = `${rect.top}px`;
+        xpElement.style.transform = 'translate(-50%, -50%)';
+        
+        document.getElementById('xpGainAnimation').appendChild(xpElement);
+        
+        // Remove after animation
+        setTimeout(() => xpElement.remove(), 1500);
+        
+        // Add floating particles
+        this.createFloatingParticles(rect.left + rect.width / 2, rect.top, 10);
+    }
+    
+    createFloatingParticles(x, y, count) {
+        for (let i = 0; i < count; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'floating-particle';
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            particle.style.background = i % 2 === 0 ? 'rgba(251, 191, 36, 0.8)' : 'rgba(139, 92, 246, 0.8)';
+            particle.style.animationDelay = `${i * 0.1}s`;
+            
+            document.getElementById('xpGainAnimation').appendChild(particle);
+            
+            // Remove after animation
+            setTimeout(() => particle.remove(), 3000);
+        }
+    }
+    
+    showAutoUpdateNotification(title, message, type = 'info') {
+        const container = document.getElementById('autoUpdateNotifications');
+        const notification = document.createElement('div');
+        notification.className = `auto-update-notification ${type}`;
+        
+        const icon = type === 'achievement' ? 
+            '<svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' :
+            type === 'warning' ?
+            '<svg class="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>' :
+            '<svg class="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>';
+        
+        notification.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0">
+                    ${icon}
+                </div>
+                <div class="flex-1">
+                    <h4 class="font-bold text-white text-sm">${title}</h4>
+                    <p class="text-gray-300 text-xs">${message}</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(notification);
+        
+        // Show notification
+        setTimeout(() => notification.classList.add('show'), 10);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 5000);
+    }
+    
+    showLevelUp(newLevel) {
+        const modal = document.getElementById('levelUpModal');
+        const title = modal.querySelector('.level-up-title');
+        const message = modal.querySelector('.level-up-message');
+        
+        title.textContent = `Level ${newLevel}!`;
+        message.textContent = `You've reached Level ${newLevel}! Keep up the great work!`;
+        
+        modal.classList.remove('hidden');
+        
+        // Add confetti effect
+        this.createConfettiEffect();
+    }
+    
+    createConfettiEffect() {
+        const colors = ['#fbbf24', '#34d399', '#60a5fa', '#a78bfa', '#f472b6'];
+        
+        for (let i = 0; i < 100; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'floating-particle';
+            confetti.style.left = `${Math.random() * 100}vw`;
+            confetti.style.top = `${Math.random() * 100}vh`;
+            confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.width = `${Math.random() * 10 + 5}px`;
+            confetti.style.height = confetti.style.width;
+            confetti.style.animationDuration = `${Math.random() * 2 + 2}s`;
+            confetti.style.animationDelay = `${Math.random() * 1}s`;
+            
+            document.getElementById('xpGainAnimation').appendChild(confetti);
+            
+            setTimeout(() => confetti.remove(), 3000);
+        }
+    }
+    
+    animateCounter(element, start, end, duration) {
+        const startTime = performance.now();
+        const updateCounter = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease out
+            
+            const currentValue = Math.floor(start + (end - start) * easeProgress);
+            element.textContent = currentValue.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateCounter);
+            } else {
+                element.textContent = end.toLocaleString();
+            }
+        };
+        
+        requestAnimationFrame(updateCounter);
+    }
+    
+    handleRealTimeUpdate(data) {
+        // Handle real-time updates from WebSocket
+        switch (data.type) {
+            case 'quest_completed':
+                this.showAutoUpdateNotification(
+                    'Quest Completed!',
+                    `${data.username} completed a quest!`,
+                    'info'
+                );
+                break;
+                
+            case 'level_up':
+                if (data.user_id === window.userId) {
+                    this.showAutoUpdateNotification(
+                        'Level Up!',
+                        `You reached Level ${data.level}!`,
+                        'achievement'
+                    );
+                }
+                break;
+                
+            case 'leaderboard_update':
+                this.updateLeaderboard();
+                break;
+        }
+    }
+}
+
+// Initialize dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.dashboardUpdater = new DashboardAutoUpdater();
+    
+    // Close level up modal
+    window.closeLevelUpModal = () => {
+        document.getElementById('levelUpModal').classList.add('hidden');
+    };
+    
+    // Close update modal
+    window.closeUpdateModal = () => {
+        document.getElementById('updateQuestModal').classList.add('hidden');
+    };
+    
+    // Open update modal
+    window.openUpdateModal = (questId, title, description) => {
+        document.getElementById('updateQuestId').value = questId;
+        document.getElementById('updateTitle').value = title;
+        document.getElementById('updateDescription').value = description;
+        document.getElementById('updateQuestModal').classList.remove('hidden');
+    };
+    
+    // Handle update form submission
+    document.getElementById('updateQuestForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const questId = document.getElementById('updateQuestId').value;
+        const formData = new FormData();
+        formData.append('title', document.getElementById('updateTitle').value);
+        formData.append('description', document.getElementById('updateDescription').value);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        try {
+            const response = await fetch(`/update-quest/${questId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                const questCard = document.querySelector(`[data-custom-quest-id="${questId}"]`);
+                if (questCard) {
+                    questCard.querySelector('.quest-title').textContent = data.quest.title;
+                    questCard.querySelector('.quest-description').textContent = data.quest.description;
+                }
+                
+                closeUpdateModal();
+                window.dashboardUpdater.showAutoUpdateNotification('Quest Updated!', data.message, 'achievement');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            window.dashboardUpdater.showAutoUpdateNotification(
+                'Error',
+                'Failed to update quest. Please try again.',
+                'warning'
+            );
+        }
+    });
+});
+</script>
+{% endblock %}

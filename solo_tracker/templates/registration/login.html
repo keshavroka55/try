@@ -7,7 +7,7 @@
 <div class="min-h-screen flex items-center justify-center relative overflow-hidden">
     <!-- Background Image -->
     <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" 
-        style="background-image: url('{% static 'images/solo1.jpg' %}');">
+        style="background-image: url('{% static 'static/images/solo1.jpg' %}');">
         <div class="absolute inset-0 bg-gradient-to-r from-purple-900/80 via-purple-800/60 to-transparent"></div>
     </div>
     
@@ -54,14 +54,14 @@
                     <!-- Email Field -->
                     <div class="relative">
                         <label for="id_username" class="block text-sm font-medium text-cyan-300 mb-2 tracking-wide">
-                            Email
+                            Username
                         </label>
                         <div class="relative">
                             <input type="text" 
                                 name="username" 
                                 id="id_username"
                                 class="w-full bg-transparent border-b-2 border-cyan-400/50 focus:border-cyan-400 text-white placeholder-gray-400 py-3 px-0 transition-all duration-300 focus:outline-none"
-                                placeholder="Enter your email"
+                                placeholder="Enter your username"
                                 required>
                             <div class="absolute right-0 top-3">
                                 <svg class="w-5 h-5 text-cyan-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,7 +97,9 @@
                             <input type="checkbox" class="mr-2 rounded bg-transparent border-cyan-400/50 text-cyan-400 focus:ring-cyan-400 focus:ring-offset-0">
                             Remember me
                         </label>
-                        <a href="#" class="text-cyan-400 hover:text-cyan-300 transition-colors">
+                        <a href="#" 
+                        onclick="event.preventDefault(); alert('Forget passwords features is comming soon!');"
+                        class="text-cyan-400 hover:text-cyan-300 transition-colors">
                             Forgot Password?
                         </a>
                     </div>

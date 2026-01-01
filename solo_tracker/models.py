@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -217,7 +219,7 @@ class CustomQuest(models.Model):
     reminder_enabled = models.BooleanField(default=False)
     
     # Progress tracking
-    target_count = models.IntegerField(default=1)
+    target_count = models.IntegerField(default=1,validators=[MinValueValidator(1), MaxValueValidator(500)])
     current_count = models.IntegerField(default=0)
     
     is_completed = models.BooleanField(default=False)
